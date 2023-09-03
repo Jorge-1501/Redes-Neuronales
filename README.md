@@ -1,2 +1,2 @@
 # Redes-Neuronales
-This repository is develop for the class Redes Neuronales in BUAP
+This repository is developed for the class Redes Neuronales in BUAP
