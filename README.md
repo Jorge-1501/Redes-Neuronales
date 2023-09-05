@@ -1,5 +1,6 @@
 # Redes-Neuronales
-This repository is developed for the class Redes Neuronales in BUAP
+Este repositorio fue modificado para la clase de 'Redes Neuronales' en BUAP. Repositorio original: https://github.com/mnielsen/neural-networks-and-deep-learning.git
 
-First Homework
-Enter to Digitos>src. mnist_loader.py, network.py and Reconocimiento_digitos.ipynb belong to this first task, code documentation.
+Primera tarea:
+Entrar a Digitos>src. mnist_loader.py, network.py y Reconocimiento_digitos.ipynb son los archivos actualizados y serán los documentados.
+La documentación original fue traducida antes de crear el repositorio, por ello se encuentra en español.
