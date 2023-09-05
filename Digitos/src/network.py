@@ -13,7 +13,18 @@ import random
 import numpy as np
 
 class Network(object):
-
+    '''
+    Se definen 7 funciones para la clase Network:
+    1. _init_
+    2. feedforward
+    3. SGD
+    4. update_mini_batch
+    5. backprop
+    6. evaluate
+    7. cost_derivative
+    Estas funciones representan un flujo común de desarrollo de una red y ala vez partes
+    escenciales.
+    '''
     def __init__(self, sizes):
         """El argumento 'sizes' es una lista que contiene el número de neuronas en las
         capas respectivas de la red. Por ejemplo, si la lista fuera [2, 3, 1], entonces
