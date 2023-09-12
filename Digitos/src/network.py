@@ -63,10 +63,10 @@ class Network(object):
             a = sigmoid(np.dot(w, a)+b)
         return a
 
-    def SGD(self, training_data, epochs, mini_batch_size, eta,
-            test_data=None):
-        """Entrena la red neuronal utilizando el descenso de gradiente estocástico por lotes
-        miniatura. El 'training_data' es una lista de tuplas '(x, y)' que representan las
+    def SGD(self, training_data, epochs, mini_batch_size, eta, momentum, test_data=None):
+        """
+        Entrena la red neuronal utilizando el descenso de gradiente estocástico con momento. 
+        El 'training_data' es una lista de tuplas '(x, y)' que representan las
         entradas de entrenamiento y las salidas deseadas. Los otros parámetros son
         autoexplicativos. Si 'test_data' se proporciona, la red se evaluará con los datos de
         prueba después de cada época y se imprimirá el progreso parcial. Esto es útil para
@@ -79,6 +79,14 @@ class Network(object):
         # Se calcula la cantidad de ejemplos de entrenamiento
         n = len(training_data)
         
+        # Inicializa los gradientes acumulativos de los sesgos y los pesos con ceros
+        nabla_b = [np.zeros(b.shape) for b in self.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
+    
+        # Inicia el momento en cero para los gradientes
+        momenta_b = [np.zeros(b.shape) for b in self.biases]
+        momenta_w = [np.zeros(w.shape) for w in self.weights]
+
         # Se inicia un bucle que recorrerá el número especificado de épocas
         for j in range(epochs):
             # Se barajan aleatoriamente los datos de entrenamiento en cada época
@@ -91,7 +99,16 @@ class Network(object):
             
             # Se itera a través de cada mini lote y se actualizan los pesos y sesgos de la red
             for mini_batch in mini_batches:
-                self.update_mini_batch(mini_batch, eta)
+                delta_nabla_b, delta_nabla_w = self.update_mini_batch(mini_batch, eta)
+            
+                # Actualiza los gradientes acumulativos con el término de momento
+                nabla_b = [nb + dnb for nb, dnb in zip(nabla_b, delta_nabla_b)]
+                nabla_w = [nw + dnw for nw, dnw in zip(nabla_w, delta_nabla_w)]
+            
+                # Actualiza el momento de los gradientes
+                momenta_b = [momentum * mb - eta * nb for mb, nb in zip(momenta_b, nabla_b)]
+                momenta_w = [momentum * mw - eta * nw for mw, nw in zip(momenta_w, nabla_w)]
+            
 
             # Si 'test_data' está presente, se evalúa el rendimiento de la red en los datos de prueba
             # y se imprime el progreso parcial. Si no se proporcionan datos de prueba, se imprime el 
@@ -101,6 +118,7 @@ class Network(object):
                     j, self.evaluate(test_data), n_test))
             else:
                 print("Época {0} completada".format(j))
+
 
     def update_mini_batch(self, mini_batch, eta):
         """Actualiza los pesos y sesgos de la red aplicando el descenso de gradiente utilizando
