@@ -73,9 +73,8 @@ class Network(object):
             # 1. Calcula el producto escalar (dot product) entre los pesos 'w' y la activación 'a' de la capa anterior.
             # 2. Luego, suma el sesgo 'b' a ese producto escalar.
             # 3. Luego, el resultado se pasa a través de una función de activación llamada 'softmax'.
-            #z = np.dot(w, a) + b
-            #a = self.softmax(z)
-            a = sigmoid(np.dot(w, a)+b)
+            z = np.dot(w, a) + b
+            a = self.softmax(z)
         return a
 
 
@@ -232,10 +231,10 @@ class Network(object):
         for b, w in zip(self.biases, self.weights):
             z = np.dot(w, activation)+b
             zs.append(z)
-            activation = sigmoid(z)
+            activation = self.softmax(z)    # Utilizamos softmax para activar capas
             activations.append(activation)
         # Retropropagación (backward pass)
-        delta = self.cost_derivative(activations[-1], y) * sigmoid_prime(zs[-1])
+        delta = self.cost_derivative(activations[-1], y)
         nabla_b[-1] = delta
         nabla_w[-1] = np.dot(delta, activations[-2].transpose())
         # Tener en cuenta que la variable 'l' en el bucle a continuación se utiliza de manera
@@ -245,7 +244,7 @@ class Network(object):
         # de que Python puede usar índices negativos en listas.
         for l in range(2, self.num_layers):
             z = zs[-l]
-            sp = sigmoid_prime(z)
+            sp = self.softmax(z) * (1 - self.softmax(z))
             delta = np.dot(self.weights[-l+1].transpose(), delta) * sp
             nabla_b[-l] = delta
             nabla_w[-l] = np.dot(delta, activations[-l-1].transpose())
