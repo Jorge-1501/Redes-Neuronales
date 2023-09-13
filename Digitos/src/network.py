@@ -17,7 +17,7 @@ class Network(object):
     Se definen 7 funciones para la clase Network:
     1. _init_
     2. feedforward
-    3. SGD
+    3. rmsprop
     4. update_mini_batch
     5. backprop
     6. evaluate
@@ -53,17 +53,33 @@ class Network(object):
         self.weights = [np.random.randn(y, x)
                         for x, y in zip(sizes[:-1], sizes[1:])]
 
+    
+    # Funciones Para implementar cross-entropy en capa softmax
+    def softmax(self, z):
+        """Función Softmax para calcular las probabilidades de clase"""
+        exp_z = np.exp(z - np.max(z))  # Restar np.max(z) para evitar problemas
+        return exp_z / np.sum(exp_z, axis=0)
+
+    def cost_derivative(self, output_activations, y):
+        """Devuelve el vector de derivadas parciales \partial C_x / \partial a para las
+        activaciones de salida utilizando la entropía cruzada"""
+        return output_activations - y
+    
+
     def feedforward(self, a):
         """Devuelve la salida de la red si 'a' es la entrada."""
         # Comienza un bucle que iterará a través de las capas de la red.    
         for b, w in zip(self.biases, self.weights):
             # 1. Calcula el producto escalar (dot product) entre los pesos 'w' y la activación 'a' de la capa anterior.
             # 2. Luego, suma el sesgo 'b' a ese producto escalar.
-            # 3. Luego, el resultado se pasa a través de una función de activación llamada 'sigmoid'.
+            # 3. Luego, el resultado se pasa a través de una función de activación llamada 'softmax'.
+            #z = np.dot(w, a) + b
+            #a = self.softmax(z)
             a = sigmoid(np.dot(w, a)+b)
         return a
 
-    def SGD(self, training_data, epochs, mini_batch_size, eta, momentum, test_data=None):
+
+    def SGD_M(self, training_data, epochs, mini_batch_size, eta, momentum, test_data=None):
         """
         Entrena la red neuronal utilizando el descenso de gradiente estocástico con momento. 
         El 'training_data' es una lista de tuplas '(x, y)' que representan las
@@ -119,6 +135,63 @@ class Network(object):
             else:
                 print("Época {0} completada".format(j))
 
+    def RMSprop(self, training_data, epochs, mini_batch_size, eta, decay_rate, epsilon, test_data=None):
+        """
+        Entrena la red neuronal utilizando el optimizador RMSprop.
+        'training_data' es una lista de tuplas '(x, y)' que representan las entradas de entrenamiento y
+        las salidas deseadas. Los otros parámetros son autoexplicativos. Si 'test_data' se proporciona,
+        la red se evaluará con los datos de prueba después de cada época y se imprimirá el progreso
+        parcial. Esto es útil para realizar un seguimiento del progreso, pero ralentiza sustancialmente
+        el proceso.
+        """
+    
+        # Si se proporciona 'test_data', se calcula la cantidad de ejemplos de prueba
+        if test_data: n_test = len(test_data)
+    
+        # Se calcula la cantidad de ejemplos de entrenamiento
+        n = len(training_data)
+    
+        # Inicializa los gradientes acumulativos de los sesgos y los pesos con ceros
+        nabla_b = [np.zeros(b.shape) for b in self.biases]
+        nabla_w = [np.zeros(w.shape) for w in self.weights]
+    
+        # Inicializa el promedio móvil de los cuadrados de los gradientes pasados
+        rmsprop_b = [np.zeros(b.shape) for b in self.biases]
+        rmsprop_w = [np.zeros(w.shape) for w in self.weights]
+    
+        # Comienza un bucle que recorrerá el número especificado de épocas
+        for j in range(epochs):
+            # Baraja aleatoriamente los datos de entrenamiento en cada época
+            random.shuffle(training_data)
+        
+            # Divide el conjunto de datos de entrenamiento en mini lotes
+            mini_batches = [
+                training_data[k:k+mini_batch_size]
+                for k in range(0, n, mini_batch_size)]
+        
+            # Itera a través de cada mini lote y actualiza los pesos y sesgos de la red con RMSprop
+            for mini_batch in mini_batches:
+                delta_nabla_b, delta_nabla_w = self.update_mini_batch(mini_batch, eta)
+            
+                # Actualiza el promedio móvil de los cuadrados de los gradientes pasados
+                rmsprop_b = [(decay_rate * rb) + ((1 - decay_rate) * dnb**2) for rb, dnb in zip(rmsprop_b, delta_nabla_b)]
+                rmsprop_w = [(decay_rate * rw) + ((1 - decay_rate) * dnw**2) for rw, dnw in zip(rmsprop_w, delta_nabla_w)]
+            
+                # Actualiza los pesos de la red con RMSprop
+                self.weights = [w - (eta / (np.sqrt(rb) + epsilon)) * nw for w, rb, nw in zip(self.weights, rmsprop_w, delta_nabla_w)]
+                # Actualiza los sesgos de la red con RMSprop
+                self.biases = [b - (eta / (np.sqrt(rb) + epsilon)) * nb for b, rb, nb in zip(self.biases, rmsprop_b, delta_nabla_b)]
+
+            # Si 'test_data' está presente, evalúa el rendimiento de la red en los datos de prueba
+            # e imprime el progreso parcial. Si no se proporcionan datos de prueba, imprime el 
+            # progreso de la época.
+            if test_data:
+                print("Época {0}: {1} / {2}".format(
+                    j, self.evaluate(test_data), n_test))
+            else:
+                print("Época {0} completada".format(j))
+
+
 
     def update_mini_batch(self, mini_batch, eta):
         """Actualiza los pesos y sesgos de la red aplicando el descenso de gradiente utilizando
@@ -143,6 +216,7 @@ class Network(object):
         # Actualiza los sesgos de la red de manera similar a los pesos
         self.biases = [b-(eta/len(mini_batch))*nb
                        for b, nb in zip(self.biases, nabla_b)]
+        return delta_nabla_b, delta_nabla_w
 
 
     def backprop(self, x, y):
